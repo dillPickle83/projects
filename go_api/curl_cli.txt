@@ -1,0 +1,3 @@
+curl -H "Content-Type: application/json" -H "Authorization: 123ABC" http://localhost:8000/account/coins/?username=alex
+curl -H "Content-Type: application/json" -H "Authorization: 456DeF" http://localhost:8000/account/coins/?username=jason
+curl -H "Content-Type: application/json" -H "Authorization: 789GHI" http://localhost:8000/account/coins/?username=marie
