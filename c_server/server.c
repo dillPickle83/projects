@@ -20,8 +20,43 @@ int main(){
     if(server_fd == 0){
         perror("SOCKET FAILED");
         exit(EXIT_FAILURE);
-    )
+    } 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
+
+    if(bind(server_fd, (struct sockaddr *)&address, addrlen) < 0){
+    perror("BIND FAILED");
+    exit(EXIT_FAILURE);
+    }
+
+    // listen for connections
+    if (listen(server_fd, 3) < 0){
+        perror("LISTEN FAILED");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server is listening on port %d\n", PORT);
+
+    // accept the connection
+    new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+    if(new_socket < 0){
+        perror("ACCEPT FAILED");
+        exit(EXIT_FAILURE);
+    }
+
+    // read data from the client
+    read(new_socket, buffer, BUFFER_SIZE);
+    printf("Received from client:\n%s\n", buffer);
+
+    // send response to the client
+    char *response = "Hello from the other side!";
+    write(new_socket, response, strlen(response));
+    printf("Response sent to client:\n%s\n", response);
+
+    // close the socket
+    close(new_socket);
+    close(server_fd);
+
+    return 0;
 }
