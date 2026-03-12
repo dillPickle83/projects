@@ -14,6 +14,12 @@ int main(){
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE];
+    char response[2048];
+    char headers[1024];
+    char *file_buffer = NULL;
+    long file_size = 0;
+
+    FILE *file = fopen("index.html", "r");
 
     //create socket
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -38,6 +44,32 @@ int main(){
 
     printf("Server is listening on port %d\n", PORT);
 
+    // Get the index HTML file
+    if (file != NULL){
+        // Find the size of the file
+        fseek(file, 0, SEEK_END);
+        long file_size = ftell(file);
+        rewind(file);
+    
+        // Allocate memory for the filesize + 1 for the \0 terminator
+        char *file_buffer = malloc(file_size + 1)
+
+        // Read the file into file_buffer
+        fread(file_buffer, 1, file_size, file);
+        file_buffer[file_size] = '\0';      \\ Terminate the buffer with the terminator
+        fclose(file);
+        printf("Cached index.html into %ld bytes of RAM", file_size);
+
+        // Construct the headers with the file size
+        snprintf(headers, sizeof(headers),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: %ld\r\n"
+            "\r\n", 
+            file_size);
+    }else{
+        printf("WARNING: index.html not found during startup. Server will return 404.\n");
+    }
     while(1){
         // accept the connection
         new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
@@ -50,12 +82,26 @@ int main(){
         memset(buffer, 0, BUFFER_SIZE);
 
         // read data from the client
-        read(new_socket, buffer, BUFFER_SIZE);
+        // Reducing the -1 from buffer_size to ensure the last character read is \0
+        read(new_socket, buffer, BUFFER_SIZE-1);
         printf("---- New request received ----\n%s\n", buffer);
+
+        if (file_buffer != NULL) {
+            // Writing the header and the file separately so that it's 
+            // cleanly stitched by the browser
+            write(new_socket, headers, strlen(headers));
+            write(new_socket, file_buffer, file_size);
+            printf("Served index.html file.\n");
+        } else {
+            // File was never loaded, send 404
+            char *not_found = "HTTP/1.1 404 Not Found\r\nContent-Length: 13\r\n\r\n404 Not Found";
+            write(new_socket, not_found, strlen(not_found));
+            printf("Sent 404 Not Found.\n");
+        }
 
         // send response to the client
         char *html_body = "<html><body><h1>Firmware Dev API Online</h1><p>Ready for embedded systems requests!</p></body></html>";
-        char response[2048];
+        
         snprintf(response, sizeof(response),
                  "HTTP/1.1 200 OK\r\n"
                  "Content-Type: text/html\r\n"
@@ -72,7 +118,10 @@ int main(){
         close(new_socket);
     }
 
-    // Close the server when the while loop is exited (^C)
+    // Close the server and free memory when the while loop is exited (^C)
+    if (file_buffer != NULL) {
+        free(file_buffer);
+    }
     close(server_fd);
 
     return 0;
