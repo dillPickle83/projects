@@ -42,23 +42,23 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    printf("Server is listening on port %d\n", PORT);
+    printf("Server is listening on port %d\r\n", PORT);
 
     // Get the index HTML file
     if (file != NULL){
         // Find the size of the file
         fseek(file, 0, SEEK_END);
-        long file_size = ftell(file);
+        file_size = ftell(file);
         rewind(file);
     
         // Allocate memory for the filesize + 1 for the \0 terminator
-        char *file_buffer = malloc(file_size + 1)
+        file_buffer = malloc(file_size + 1);
 
         // Read the file into file_buffer
         fread(file_buffer, 1, file_size, file);
-        file_buffer[file_size] = '\0';      \\ Terminate the buffer with the terminator
+        file_buffer[file_size] = '\0';      // Terminate the buffer with the terminator
         fclose(file);
-        printf("Cached index.html into %ld bytes of RAM", file_size);
+        printf("Cached index.html into %ld bytes of RAM\r\n", file_size);
 
         // Construct the headers with the file size
         snprintf(headers, sizeof(headers),
@@ -88,7 +88,7 @@ int main(){
 
         if (file_buffer != NULL) {
             // Writing the header and the file separately so that it's 
-            // cleanly stitched by the browser
+            // stitched by the browser
             write(new_socket, headers, strlen(headers));
             write(new_socket, file_buffer, file_size);
             printf("Served index.html file.\n");
@@ -98,21 +98,6 @@ int main(){
             write(new_socket, not_found, strlen(not_found));
             printf("Sent 404 Not Found.\n");
         }
-
-        // send response to the client
-        char *html_body = "<html><body><h1>Firmware Dev API Online</h1><p>Ready for embedded systems requests!</p></body></html>";
-        
-        snprintf(response, sizeof(response),
-                 "HTTP/1.1 200 OK\r\n"
-                 "Content-Type: text/html\r\n"
-                 "Content-Length: %lu\r\n"
-                 "\r\n"
-                 "%s",
-                 strlen(html_body), html_body);
-
-        // Send the complete HTTP response back to the client
-        write(new_socket, response, strlen(response));
-        printf("Response sent to client:\n%s\n", response);
 
         // close the socket
         close(new_socket);
