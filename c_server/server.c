@@ -94,8 +94,8 @@ int main(){
         sscanf(buffer, "%s %s", method, path);
         printf("Parsed request -> Method: %s | Path: %s\n", method, path);
 
-        if (strcomp(method, "GET") == 0){
-            if (strcomp(path, "/") || strcomp(path, "/index.html") == 0){
+        if (strcmp(method, "GET") == 0){
+            if (strcmp(path, "/") == 0 || strcmp(path, "/index.html") == 0){
                 if (file_buffer != NULL) {
                     // Writing the header and the file separately so that it's 
                     // stitched by the browser
@@ -108,20 +108,20 @@ int main(){
                     write(new_socket, not_found, strlen(not_found));
                     printf("Sent 404 Not Found.\n");
                 }
-            }else if(strcomp(path "lorem_ipsum") == 0){
+            }else if(strcmp(path, "/lorem_ipsum") == 0){
                 char *lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
                 char api_response[2048];
 
                 snprintf(api_response, sizeof(api_response),
                     "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain\r\n" // Notice this is text/plain, not HTML
+                    "Content-Type: text/plain\r\n"
                     "Content-Length: %zu\r\n"
                     "\r\n"
                     "%s", 
                     strlen(lorem), lorem);
 
                 write(new_socket, api_response, sizeof(api_response));
-                printf("Served Lorem Ipsum excerpt.")
+                printf("Served Lorem Ipsum excerpt.\n");
             }else{
                 // Route 3: Catch-all 404 for unknown paths
                 char *not_found = "HTTP/1.1 404 Not Found\r\nContent-Length: 23\r\n\r\n404 Endpoint Not Found";
@@ -131,13 +131,12 @@ int main(){
             // close the socket
             close(new_socket);
         }
-
-        // Close the server and free memory when the while loop is exited (^C)
-        if (file_buffer != NULL) {
-            free(file_buffer);
-        }
-        close(server_fd);
-
-        return 0;
     }
+    // Close the server and free memory when the while loop is exited (^C)
+    if (file_buffer != NULL) {
+        free(file_buffer);
+    }
+    close(server_fd);
+
+    return 0;
 }
