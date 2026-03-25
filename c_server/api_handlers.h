@@ -4,5 +4,6 @@
 void lorem_ipsum(int client_socket);
 void not_found(int client_socket, const char *path);
 void static_html(int client_socket, const char *file_buffer, long file_size);
+void api_healht(int client_socket);
 
 #endif

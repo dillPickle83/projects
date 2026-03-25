@@ -43,3 +43,39 @@ void static_html(int client_socket, const char *file_buffer, long file_size){
         not_found(client_socket, "/index.html");
     }
 }
+
+void api_health(int client_socket){
+    // Open the process loadavg and get the load in the 
+    // last 1, 5 and 15 minutes respectively
+    FILE *fp = fopen("/proc/loadavg", "r");
+    double load1 = 0.0, load5 = 0.0, load15 = 0.0;
+
+    if (file != NULL){
+        fscanf(fp, "%lf %lf %lf", &load1, &load5, &load15);
+        fclose(fp);
+    }else{
+        pritnf("Error reading the process 'loadavg'");
+    }
+
+    char json_payload[256];
+    snprintf(json_payload, sizeof(json_payload),
+            "{\n"
+            "  \"status\": \"online\",\n"
+            "  \"cpu_load_1m\": %.2f,\n"
+            "  \"cpu_load_5m\": %.2f,\n"
+            "  \"cpu_load_15m\": %.2f\n"
+            "}",
+            load1, load5, load15);
+
+    char api_response[256];
+    snprintf(api_response, sizeof(api_response),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: %zu\r\n"
+            "\r\n"
+            "%s",
+            strlen(json_payload), json_payload);
+
+    write(client_socket, api_reponse, sizeof(api_response));
+    printf("Served the /api/health endpoint");
+}
