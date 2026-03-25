@@ -50,11 +50,11 @@ void api_health(int client_socket){
     FILE *fp = fopen("/proc/loadavg", "r");
     double load1 = 0.0, load5 = 0.0, load15 = 0.0;
 
-    if (file != NULL){
+    if (fp != NULL){
         fscanf(fp, "%lf %lf %lf", &load1, &load5, &load15);
         fclose(fp);
     }else{
-        pritnf("Error reading the process 'loadavg'");
+        printf("Error reading the process 'loadavg'");
     }
 
     char json_payload[256];
@@ -76,6 +76,6 @@ void api_health(int client_socket){
             "%s",
             strlen(json_payload), json_payload);
 
-    write(client_socket, api_reponse, sizeof(api_response));
+    write(client_socket, api_response, sizeof(api_response));
     printf("Served the /api/health endpoint");
 }
