@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "router.h"
-#include "api_handlers.c"
+#include "api_handlers.h"
 
 void route_request(int client_socket, const char *request_buffer, const char *file_buffer, long file_size){
     char method[16] = {0};
@@ -13,7 +13,6 @@ void route_request(int client_socket, const char *request_buffer, const char *fi
     if (strcmp(method, "GET") == 0){
         if (strcmp(path, "/") == 0 || strcmp(path, "/index.html") == 0){
             static_html(client_socket, file_buffer, file_size);
-        }
         }else if(strcmp(path, "/lorem_ipsum") == 0){
             lorem_ipsum(client_socket);
         }else if(strcmp(path, "/api/health") == 0){
@@ -21,5 +20,5 @@ void route_request(int client_socket, const char *request_buffer, const char *fi
         }else{
             not_found(client_socket, path);
         }
-        
+    }
 }

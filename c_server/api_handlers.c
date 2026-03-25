@@ -67,7 +67,7 @@ void api_health(int client_socket){
             "}",
             load1, load5, load15);
 
-    char api_response[256];
+    char api_response[1024];
     snprintf(api_response, sizeof(api_response),
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
