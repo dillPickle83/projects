@@ -5,10 +5,34 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include "router.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+
+typedef struct{
+    int socket_fd;
+    const char* file_buffer;
+    long file_size;
+}ThreadArgs;
+
+void *handle_client_thread(void *arg){
+    ThreadArgs *args = (ThreadArgs *)arg;
+    int client_socket = args->socket_fd;
+    char buffer[BUFFER_SIZE];
+
+
+    memset(buffer, 0, BUFFER_SIZE);
+    read(client_socket, buffer, BUFFER_SIZE - 1);
+    printf("-----Thread %lu handling the request-----\n", pthread_self());
+
+    route_request(client_socket, buffer, args->file_buffer, args->file_size);
+
+    close(client_socket);
+    free(args);
+    return NULL;
+}
 
 int main() {
     int server_fd, new_socket;
@@ -20,7 +44,7 @@ int main() {
 
     FILE *file = fopen("index.html", "r");
 
-    // 1. Create socket (Changed the '1' back to '0' here!)
+    // Create socket (Changed the '1' back to '0' here!)
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_fd == 0){
         perror("SOCKET FAILED");
@@ -35,7 +59,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // 2. Listen for connections
+    // Listen for connections
     if (listen(server_fd, 3) < 0){
         perror("LISTEN FAILED");
         exit(EXIT_FAILURE);
@@ -43,7 +67,7 @@ int main() {
 
     printf("Server is listening on port %d\r\n", PORT);
 
-    // 3. Cache the index HTML file into memory
+    // Cache the index HTML file into memory
     if (file != NULL){
         fseek(file, 0, SEEK_END);
         file_size = ftell(file);
@@ -58,30 +82,30 @@ int main() {
         printf("WARNING: index.html not found during startup. Server will return 404.\n");
     }
 
-    // 4. The Infinite Server Loop
+    // Accept connections till the program is stopped
     while(1){
         // Accept the connection
         new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
         if(new_socket < 0){
             perror("ACCEPT FAILED");
-            continue; // Changed from exit() to continue; so the server stays alive
+            continue;
         }
-    
-        // Clear the buffer before reading new data
-        memset(buffer, 0, BUFFER_SIZE);
 
-        // Read data from the client
-        read(new_socket, buffer, BUFFER_SIZE-1);
-        printf("---- New request received ----\n%s\n", buffer);
+        ThreadArgs *args = malloc(sizeof(ThreadArgs));
+        args->socket_fd = new_socket;
+        args->file_buffer = file_buffer;
+        args->file_size = file_size;
 
-        // Pass the raw text off to your modular router
-        route_request(new_socket, buffer, file_buffer, file_size);
+        pthread_t thread_id;
+        if (pthread_create(&thread_id, NULL, handle_client_thread, args) != 0){
+            perror("FAILED TO CREATE THE THREAD\n");
+            free(args);
+            close(new_socket);
+        }else{
+            pthread_detach(thread_id);
+        }
+    }
 
-        // Close the socket for this specific client
-        close(new_socket);
-    } // <-- Removed the rogue extra brace that was here
-
-    // Close the server and free memory when the program is killed (e.g., Ctrl+C)
     if (file_buffer != NULL) {
         free(file_buffer);
     }

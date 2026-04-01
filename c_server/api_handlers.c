@@ -76,6 +76,6 @@ void api_health(int client_socket){
             "%s",
             strlen(json_payload), json_payload);
 
-    write(client_socket, api_response, sizeof(api_response));
+    write(client_socket, api_response, strlen(api_response));
     printf("Served the /api/health endpoint");
 }
